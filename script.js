@@ -1,48 +1,50 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- Загрузка спрайта и косточки ---
-const dogSprite = new Image();
-dogSprite.src = "assets/dog-sprite.png";
+const sprite = new Image();
+sprite.src = "assets/dog-sprite.png"; // 768x768, 3x3 кадров
 
 const boneImg = new Image();
 boneImg.src = "assets/bone.png";
 
-// --- Настройки спрайта ---
-const spriteCols = 3;
-const spriteRows = 3;
-const totalFrames = 9;
-const frameWidth = 256;  // исходя из твоего изображения: 768 / 3 = 256
-const frameHeight = 256; // 768 / 3 = 256
+const scoreDisplay = document.getElementById("score");
+
+const frameCols = 3;
+const frameRows = 3;
+const totalFrames = frameCols * frameRows;
+const frameWidth = 768 / frameCols;
+const frameHeight = 768 / frameRows;
+
 let currentFrame = 0;
 let frameCounter = 0;
 
-// --- Игрок ---
-const player = { lane: 1, y: 400, width: 40, height: 40 };
-const lanes = [30, 130, 230];
+let player = {
+  lane: 1,
+  y: 220,
+  width: frameWidth,
+  height: frameHeight,
+};
 
-// --- Игра ---
+const lanes = [30, 130, 230];
 let bones = [];
 let score = 0;
 let speed = 2;
 let gameInterval;
 let boneInterval;
-const scoreDisplay = document.getElementById("score");
 
-// --- Отрисовка игрока со спрайтом ---
 function drawPlayer() {
-  const col = currentFrame % spriteCols;
-  const row = Math.floor(currentFrame / spriteCols);
+  const col = currentFrame % frameCols;
+  const row = Math.floor(currentFrame / frameCols);
 
   ctx.drawImage(
-    dogSprite,
+    sprite,
     col * frameWidth,
     row * frameHeight,
     frameWidth,
     frameHeight,
     lanes[player.lane],
     player.y,
-    player.height,
+    player.width,
     player.height
   );
 
@@ -52,7 +54,6 @@ function drawPlayer() {
   }
 }
 
-// --- Косточки ---
 function drawBones() {
   bones.forEach(b => {
     ctx.drawImage(boneImg, lanes[b.lane], b.y, 30, 30);
@@ -64,7 +65,11 @@ function updateBones() {
   bones = bones.filter(b => b.y < canvas.height);
 
   for (let b of bones) {
-    if (b.lane === player.lane && b.y + 30 >= player.y && b.y <= player.y + player.height) {
+    if (
+      b.lane === player.lane &&
+      b.y + 30 >= player.y &&
+      b.y <= player.y + player.height
+    ) {
       score++;
       bones = bones.filter(x => x !== b);
     }
