@@ -1,37 +1,43 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- Спрайт собаки ---
+// --- Загрузка спрайта и косточки ---
 const dogSprite = new Image();
-dogSprite.src = "assets/dog-sprite.png"; // замените на свой спрайт-лист
+dogSprite.src = "assets/dog-sprite.png";
 
-const frameWidth = 40;    // ширина одного кадра
-const frameHeight = 40;   // высота кадра
-const totalFrames = 6;    // количество кадров
-let currentFrame = 0;
-let frameCounter = 0;
-
-// --- Картинка косточки ---
 const boneImg = new Image();
 boneImg.src = "assets/bone.png";
 
-// --- Игровые переменные ---
+// --- Настройки спрайта ---
+const spriteCols = 3;
+const spriteRows = 3;
+const totalFrames = 9;
+const frameWidth = 256;  // исходя из твоего изображения: 768 / 3 = 256
+const frameHeight = 256; // 768 / 3 = 256
+let currentFrame = 0;
+let frameCounter = 0;
+
+// --- Игрок ---
 const player = { lane: 1, y: 400, width: 40, height: 40 };
 const lanes = [30, 130, 230];
+
+// --- Игра ---
 let bones = [];
 let score = 0;
 let speed = 2;
 let gameInterval;
 let boneInterval;
-
 const scoreDisplay = document.getElementById("score");
 
-// --- Игрок (анимированный через спрайт) ---
+// --- Отрисовка игрока со спрайтом ---
 function drawPlayer() {
+  const col = currentFrame % spriteCols;
+  const row = Math.floor(currentFrame / spriteCols);
+
   ctx.drawImage(
     dogSprite,
-    currentFrame * frameWidth,  // x-координата кадра в спрайте
-    0,                          // y-координата (если в одну строку)
+    col * frameWidth,
+    row * frameHeight,
     frameWidth,
     frameHeight,
     lanes[player.lane],
@@ -40,21 +46,19 @@ function drawPlayer() {
     player.height
   );
 
-  // Анимация: меняем кадр каждые 5 тиков
   frameCounter++;
   if (frameCounter % 5 === 0) {
     currentFrame = (currentFrame + 1) % totalFrames;
   }
 }
 
-// --- Отрисовка косточек ---
+// --- Косточки ---
 function drawBones() {
   bones.forEach(b => {
     ctx.drawImage(boneImg, lanes[b.lane], b.y, 30, 30);
   });
 }
 
-// --- Обновление косточек и счёта ---
 function updateBones() {
   bones.forEach(b => b.y += speed);
   bones = bones.filter(b => b.y < canvas.height);
@@ -69,12 +73,10 @@ function updateBones() {
   scoreDisplay.textContent = "Очки: " + score;
 }
 
-// --- Спавн косточки ---
 function spawnBone() {
   bones.push({ lane: Math.floor(Math.random() * 3), y: -30 });
 }
 
-// --- Основной цикл игры ---
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawPlayer();
@@ -82,7 +84,6 @@ function draw() {
   updateBones();
 }
 
-// --- Старт игры ---
 function startGame() {
   player.lane = 1;
   bones = [];
@@ -97,7 +98,6 @@ function startGame() {
   boneInterval = setInterval(spawnBone, 1000);
 }
 
-// --- Управление игроком ---
 document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft" && player.lane > 0) player.lane--;
   if (e.key === "ArrowRight" && player.lane < 2) player.lane++;
