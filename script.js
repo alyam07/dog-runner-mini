@@ -3,7 +3,7 @@ const ctx = canvas.getContext("2d");
 
 let dogImg = new Image();
 let boneImg = new Image();
-dogImg.src = "assets/dog.png";
+dogImg.src = "assets/dog-run.gif";
 boneImg.src = "assets/bone.png";
 
 let scoreDisplay = document.getElementById("score");
