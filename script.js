@@ -42,7 +42,7 @@ function drawPlayer() {
     frameHeight,
     lanes[player.lane],
     player.y,
-    player.width,
+    player.height,
     player.height
   );
 
