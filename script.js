@@ -5,7 +5,7 @@ const dogSprite = new Image();
 dogSprite.src = "assets/dog-sprite4.png";
 
 const boneImg = new Image();
-boneImg.src = "assets/bone.png";
+boneImg.src = "assets/bone1.png";
 
 let scoreDisplay = document.getElementById("score");
 
