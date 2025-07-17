@@ -47,7 +47,7 @@ function drawPlayer() {
     dogSprite,
     col * frameWidth, row * frameHeight,
     frameWidth, frameHeight,
-    lanes[player.lane] + (18 - player.width / 2), player.y,
+    lanes[player.lane] + (40 - player.width / 2), player.y,
     player.width, player.height
   );
 
