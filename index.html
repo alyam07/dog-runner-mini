@@ -11,8 +11,10 @@
   <h1>Pup Rush</h1>
   <canvas id="gameCanvas" width="300" height="500"></canvas>
   <p id="score">Очки: 0</p>
-  <button onclick="startGame()">Играть снова</button>
+
+  <!-- Только одна кнопка: -->
+  <button id="restartBtn" onclick="startGame()" style="display:none;">Играть снова</button>
+
   <script src="script.js"></script>
 </body>
 </html>
-<button id="restartBtn" onclick="startGame()" style="display:none;">Играть снова</button>
