@@ -28,8 +28,8 @@ const frameHeight = 341;
 let player = {
   lane: 1,
   y: 400,
-  width: 80,   // Отображаемый размер на canvas
-  height: 80,
+  width: 100,   // Отображаемый размер на canvas
+  height: 100,
 };
 
 let lanes = [30, 130, 230];
