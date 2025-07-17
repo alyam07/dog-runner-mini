@@ -60,7 +60,7 @@ function drawPlayer() {
 
 function drawBones() {
   bones.forEach(b => {
-    ctx.drawImage(boneImg, lanes[b.lane], b.y, 80, 80);
+    ctx.drawImage(boneImg, lanes[b.lane], b.y, 75, 75);
   });
 }
 
