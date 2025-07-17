@@ -7,6 +7,11 @@ dogSprite.src = "assets/dog-sprite4.png";
 const boneImg = new Image();
 boneImg.src = "assets/bone1.png";
 
+const bombImg = new Image();
+bombImg.src = "assets/bomb.png";
+
+let bombs = [];
+
 let scoreDisplay = document.getElementById("score");
 
 let frameIndex = 0;
@@ -68,6 +73,33 @@ function updateBones() {
   bones.forEach(b => b.y += speed);
   bones = bones.filter(b => b.y < canvas.height);
 
+  function spawnBomb() {
+  bombs.push({ lane: Math.floor(Math.random() * 3), y: -30 });
+}
+
+  function drawBombs() {
+  bombs.forEach(b => {
+    ctx.drawImage(bombImg, lanes[b.lane], b.y, 30, 30);
+  });
+}
+
+  function updateBombs() {
+  bombs.forEach(b => b.y += speed);
+  bombs = bombs.filter(b => b.y < canvas.height);
+
+  for (let b of bombs) {
+    if (
+      b.lane === player.lane &&
+      b.y + 30 >= player.y &&
+      b.y <= player.y + player.height
+    ) {
+      alert("💥 Вы попали на бомбу!\nИгра окончена. Очки: " + score);
+      location.reload();
+    }
+  }
+}
+
+
   for (let b of bones) {
     if (b.lane === player.lane && b.y + 30 >= player.y && b.y <= player.y + player.height) {
       score++;
@@ -87,6 +119,8 @@ function draw() {
   drawPlayer();
   drawBones();
   updateBones();
+  drawBombs();
+updateBombs();
 }
 
 function startGame() {
@@ -99,6 +133,7 @@ function startGame() {
   if (boneInterval) clearInterval(boneInterval);
   gameInterval = setInterval(draw, 20);
   boneInterval = setInterval(spawnBone, 1000);
+  setInterval(spawnBomb, 3000); // каждые 3 секунды
 }
 
 document.addEventListener("keydown", e => {
