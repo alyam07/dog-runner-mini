@@ -22,8 +22,8 @@ const spriteSheetWidth = 1024;
 const spriteSheetHeight = 1024;
 
 // Размер одного кадра
-const frameWidth = 341.33;
-const frameHeight = 341.33;
+const frameWidth = 341;
+const frameHeight = 341;
 
 let player = {
   lane: 1,
