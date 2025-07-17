@@ -87,7 +87,7 @@ function updateBones() {
 
 function drawBombs() {
   bombs.forEach(b => {
-    ctx.drawImage(bombImg, lanes[b.lane], b.y, 70, 50);
+    ctx.drawImage(bombImg, lanes[b.lane], b.y, 60, 80);
   });
 }
 
