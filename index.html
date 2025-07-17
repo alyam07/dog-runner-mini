@@ -8,12 +8,12 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Pup Rush</h1>
-  <canvas id="gameCanvas" width="300" height="500"></canvas>
-  <p id="score">Очки: 0</p>
-
-  <!-- Только одна кнопка: -->
-  <button id="restartBtn" onclick="startGame()" style="display:none;">Играть снова</button>
+  <div class="game-container">
+    <h1>Pup Rush</h1>
+    <canvas id="gameCanvas" width="300" height="500"></canvas>
+    <p id="score">Очки: 0</p>
+    <button id="restartBtn" onclick="startGame()" style="display: none;">Играть снова</button>
+  </div>
 
   <script src="script.js"></script>
 </body>
