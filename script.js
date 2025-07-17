@@ -17,18 +17,19 @@ let frameDelayCounter = 0;
 const spriteCols = 3;
 const spriteRows = 3;
 
-// Размеры спрайта (поставь реальные размеры изображения)
-const spriteSheetWidth = 768;
-const spriteSheetHeight = 768;
+// Размеры изображения спрайта
+const spriteSheetWidth = 1024;
+const spriteSheetHeight = 1024;
 
-const frameWidth = spriteSheetWidth / spriteCols;
-const frameHeight = spriteSheetHeight / spriteRows;
+// Размер одного кадра
+const frameWidth = 341;
+const frameHeight = 341;
 
 let player = {
   lane: 1,
   y: 400,
-  width: 60,   // Отображаемый размер на canvas
-  height: 60,
+  width: 80,   // Отображаемый размер на canvas
+  height: 80,
 };
 
 let lanes = [30, 130, 230];
@@ -44,10 +45,10 @@ function drawPlayer() {
 
   ctx.drawImage(
     dogSprite,
-    col * frameWidth, row * frameHeight, // исходное положение кадра
-    frameWidth, frameHeight,             // размер кадра
-    lanes[player.lane], player.y,        // положение на canvas
-    player.width, player.height          // масштаб на canvas
+    col * frameWidth, row * frameHeight,
+    frameWidth, frameHeight,
+    lanes[player.lane], player.y,
+    player.width, player.height
   );
 
   frameDelayCounter++;
