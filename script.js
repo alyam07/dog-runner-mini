@@ -2,7 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const dogSprite = new Image();
-dogSprite.src = "assets/dog-sprite3.png";
+dogSprite.src = "assets/dog-sprite4.png";
 
 const boneImg = new Image();
 boneImg.src = "assets/bone.png";
