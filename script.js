@@ -10,8 +10,6 @@ boneImg.src = "assets/bone1.png";
 const bombImg = new Image();
 bombImg.src = "assets/bomb.png";
 
-let bombs = [];
-
 let scoreDisplay = document.getElementById("score");
 
 let frameIndex = 0;
@@ -33,16 +31,18 @@ const frameHeight = 341;
 let player = {
   lane: 1,
   y: 350,
-  width: 120,   // Отображаемый размер на canvas
-  height: 120,
+  width: 120, // Отображаемый размер
+  height: 120
 };
 
-let lanes = [15, 105, 205];
+let lanes = [15, 105, 205]; // Позиции 3 полос
 let bones = [];
+let bombs = [];
 let score = 0;
 let speed = 2;
 let gameInterval;
 let boneInterval;
+let bombInterval;
 
 function drawPlayer() {
   let col = frameIndex % spriteCols;
@@ -69,39 +69,18 @@ function drawBones() {
   });
 }
 
+function drawBombs() {
+  bombs.forEach(b => {
+    ctx.drawImage(bombImg, lanes[b.lane], b.y, 50, 50);
+  });
+}
+
 function updateBones() {
   bones.forEach(b => b.y += speed);
   bones = bones.filter(b => b.y < canvas.height);
 
-  function spawnBomb() {
-  bombs.push({ lane: Math.floor(Math.random() * 3), y: -30 });
-}
-
-  function drawBombs() {
-  bombs.forEach(b => {
-    ctx.drawImage(bombImg, lanes[b.lane], b.y, 30, 30);
-  });
-}
-
-  function updateBombs() {
-  bombs.forEach(b => b.y += speed);
-  bombs = bombs.filter(b => b.y < canvas.height);
-
-  for (let b of bombs) {
-    if (
-      b.lane === player.lane &&
-      b.y + 30 >= player.y &&
-      b.y <= player.y + player.height
-    ) {
-      alert("💥 Вы попали на бомбу!\nИгра окончена. Очки: " + score);
-      location.reload();
-    }
-  }
-}
-
-
   for (let b of bones) {
-    if (b.lane === player.lane && b.y + 30 >= player.y && b.y <= player.y + player.height) {
+    if (b.lane === player.lane && b.y + 72 >= player.y && b.y <= player.y + player.height) {
       score++;
       bones = bones.filter(x => x !== b);
     }
@@ -110,30 +89,53 @@ function updateBones() {
   scoreDisplay.textContent = "Очки: " + score;
 }
 
+function updateBombs() {
+  bombs.forEach(b => b.y += speed);
+  bombs = bombs.filter(b => b.y < canvas.height);
+
+  for (let b of bombs) {
+    if (
+      b.lane === player.lane &&
+      b.y + 50 >= player.y &&
+      b.y <= player.y + player.height
+    ) {
+      alert("💥 Вы попали на бомбу!\nИгра окончена. Очки: " + score);
+      location.reload();
+    }
+  }
+}
+
 function spawnBone() {
   bones.push({ lane: Math.floor(Math.random() * 3), y: -30 });
+}
+
+function spawnBomb() {
+  bombs.push({ lane: Math.floor(Math.random() * 3), y: -50 });
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawPlayer();
   drawBones();
-  updateBones();
   drawBombs();
-updateBombs();
+  updateBones();
+  updateBombs();
 }
 
 function startGame() {
   player.lane = 1;
   bones = [];
+  bombs = [];
   score = 0;
   frameIndex = 0;
   frameDelayCounter = 0;
   if (gameInterval) clearInterval(gameInterval);
   if (boneInterval) clearInterval(boneInterval);
+  if (bombInterval) clearInterval(bombInterval);
+
   gameInterval = setInterval(draw, 20);
   boneInterval = setInterval(spawnBone, 1000);
-  setInterval(spawnBomb, 3000); // каждые 3 секунды
+  bombInterval = setInterval(spawnBomb, 3000); // бомба каждые 3 сек
 }
 
 document.addEventListener("keydown", e => {
