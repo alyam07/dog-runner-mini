@@ -32,7 +32,7 @@ let player = {
   height: 120,
 };
 
-let lanes = [20, 110, 210];
+let lanes = [10, 100, 200];
 let bones = [];
 let score = 0;
 let speed = 2;
