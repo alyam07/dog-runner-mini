@@ -85,7 +85,7 @@ function drawBones() {
 
 function drawBombs() {
   bombs.forEach(b =>
-    ctx.drawImage(bombImg, lanes[b.lane], b.y, 40, 40)
+    ctx.drawImage(bombImg, lanes[b.lane], b.y, 60, 80)
   );
 }
 
@@ -135,8 +135,8 @@ function updateBombs() {
   bombs = bombs.filter(b => b.y < canvas.height);
 
   bombs.forEach(b => {
-    const top = b.y + 100;
-    const bottom = b.y + 60;
+    const top = b.y + 80;
+    const bottom = b.y + 40;
     const isInSameLane = b.lane === player.lane;
     const intersects = bottom >= player.y && top <= player.y + player.height;
     if (isInSameLane && intersects) endGame();
