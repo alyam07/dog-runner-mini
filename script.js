@@ -1,7 +1,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-/* --------- изображения --------- */
+/* === Изображения === */
 const dogSprite = new Image();
 dogSprite.src = "assets/dog-sprite4.png";
 
@@ -14,52 +14,53 @@ bombImg.src = "assets/bomb.png";
 const crowSprite = new Image();
 crowSprite.src = "assets/crow-sprite.png";
 
-/* --------- UI --------- */
+const rockImg = new Image();
+rockImg.src = "assets/rock.png";
+
+/* === UI элементы === */
 const scoreDisplay = document.getElementById("score");
 const restartBtn = document.getElementById("restartBtn");
 
-/* --------- настройки спрайтов --------- */
-let frameIndex = 0, frameDelayCounter = 0;
-const frameCount = 9, frameDelay = 5;
-const spriteCols = 3, spriteRows = 3;
-const frameWidth = 1024 / spriteCols;
-const frameHeight = 1024 / spriteRows;
+/* === Анимация спрайта собаки === */
+let frameIndex = 0;
+const frameCount = 9;
+const frameDelay = 5;
+let frameDelayCounter = 0;
 
-let crowFrameIndex = 0, crowDelayCounter = 0;
+const spriteCols = 3;
+const spriteRows = 3;
+const spriteSheetWidth = 1024;
+const spriteSheetHeight = 1024;
+const frameWidth = spriteSheetWidth / spriteCols;
+const frameHeight = spriteSheetHeight / spriteRows;
 
-/* --------- состояние --------- */
+/* === Игровое состояние === */
 let player = { lane: 1, y: 350, width: 120, height: 120 };
 const lanes = [15, 105, 205];
-let bones = [], bombs = [], score = 0, speed = 2;
-let isGameOver = false, isBossMode = false;
-let gameInterval, boneInterval, bombInterval;
+let bones = [];
+let bombs = [];
+let rocks = [];
 
-/* --------- враг (ворона) --------- */
-let crow = { x: canvas.width / 2 - 60, y: -150, width: 120, height: 120 };
-let crowSpriteReady = false;
+let score = 0;
+let speed = 2;
+let isGameOver = false;
 
-crowSprite.onload = () => { crowSpriteReady = true; };
+let gameInterval;
+let boneInterval;
+let bombInterval;
+let rockInterval;
 
-function drawCrow() {
-  if (!crowSpriteReady) return;
-  const col = crowFrameIndex % spriteCols;
-  const row = Math.floor(crowFrameIndex / spriteCols);
+let bossActive = false;
+let crow = {
+  frame: 0,
+  frameDelay: 7,
+  frameCounter: 0,
+  x: lanes[1],
+  y: canvas.height,
+  targetLane: 1,
+};
 
-  ctx.drawImage(
-    crowSprite,
-    col * frameWidth, row * frameHeight,
-    frameWidth, frameHeight,
-    crow.x, crow.y,
-    crow.width, crow.height
-  );
-
-  if (++crowDelayCounter >= frameDelay) {
-    crowFrameIndex = (crowFrameIndex + 1) % frameCount;
-    crowDelayCounter = 0;
-  }
-}
-
-/* --------- отрисовка --------- */
+/* === Рисование === */
 function drawPlayer() {
   const col = frameIndex % spriteCols;
   const row = Math.floor(frameIndex / spriteCols);
@@ -67,8 +68,7 @@ function drawPlayer() {
     dogSprite,
     col * frameWidth, row * frameHeight,
     frameWidth, frameHeight,
-    isBossMode ? player.x : lanes[player.lane] + (35 - player.width / 2),
-    player.y,
+    lanes[player.lane] + (35 - player.width / 2), player.y,
     player.width, player.height
   );
   if (++frameDelayCounter >= frameDelay) {
@@ -89,106 +89,175 @@ function drawBombs() {
   );
 }
 
-/* --------- обновление --------- */
+function drawRocks() {
+  rocks.forEach(r =>
+    ctx.drawImage(rockImg, lanes[r.lane], r.y, 60, 60)
+  );
+}
+
+function drawCrow() {
+  const crowCol = crow.frame % 3;
+  const crowRow = Math.floor(crow.frame / 3);
+  ctx.drawImage(
+    crowSprite,
+    crowCol * 341, crowRow * 341,
+    341, 341,
+    crow.x, crow.y,
+    100, 100
+  );
+  if (++crow.frameCounter >= crow.frameDelay) {
+    crow.frame = (crow.frame + 1) % 9;
+    crow.frameCounter = 0;
+  }
+}
+
+/* === Обновление === */
 function updateBones() {
-  bones.forEach(b => b.y += speed);
+  bones.forEach(b => (b.y += speed));
   bones = bones.filter(b => b.y < canvas.height);
+
   bones.forEach(b => {
-    if (!isBossMode && b.lane === player.lane &&
-        b.y + 60 >= player.y && b.y <= player.y + player.height) {
+    if (
+      b.lane === player.lane &&
+      b.y + 60 >= player.y &&
+      b.y <= player.y + player.height
+    ) {
       score++;
       bones = bones.filter(x => x !== b);
     }
   });
+
   scoreDisplay.textContent = "Очки: " + score;
 }
 
 function updateBombs() {
-  bombs.forEach(b => b.y += speed);
+  bombs.forEach(b => (b.y += speed));
   bombs = bombs.filter(b => b.y < canvas.height);
+
   bombs.forEach(b => {
-    const top = b.y + 60, bottom = b.y + 100;
-    const intersect = bottom >= player.y && top <= player.y + player.height;
-    const sameLane = !isBossMode && b.lane === player.lane;
-    if (sameLane && intersect) endGame();
+    const top = b.y + 100;
+    const bottom = b.y + 60;
+    const isInSameLane = b.lane === player.lane;
+    const intersects = bottom >= player.y && top <= player.y + player.height;
+    if (isInSameLane && intersects) endGame();
+  });
+}
+
+function updateRocks() {
+  rocks.forEach(r => (r.y += speed));
+  rocks = rocks.filter(r => r.y < canvas.height);
+
+  rocks.forEach(r => {
+    const isInSameLane = r.lane === player.lane;
+    const intersects = r.y + 60 >= player.y && r.y <= player.y + player.height;
+    if (isInSameLane && intersects) {
+      crowAttack();
+    }
   });
 }
 
 function updateCrow() {
-  crow.y += 0.5;
-  if (crow.y + crow.height >= player.y) endGame();
-}
+  if (crow.y > player.y + player.height + 10) {
+    crow.y -= 2;
+  } else {
+    crow.y = player.y + player.height + 10;
+  }
 
-function maybeEnterBossMode() {
-  if (!isBossMode && (score >= 30 && (score - 30) % 50 === 0)) {
-    isBossMode = true;
-    bones = []; bombs = [];
-    player.lane = 1;
-    player.x = canvas.width / 2 - 60;
-    player.y = 400;
-    crow.y = -150;
+  if (crow.targetLane !== player.lane) {
+    crow.targetLane = player.lane;
+    setTimeout(() => {
+      crow.x = lanes[player.lane] + 20;
+    }, 1000);
   }
 }
 
-/* --------- цикл --------- */
+/* === Спавн === */
+function spawnBone() {
+  bones.push({ lane: Math.floor(Math.random() * 3), y: -60 });
+}
+
+function spawnBomb() {
+  const laneOptions = [0, 1, 2].filter(l =>
+    !bones.some(b => b.lane === l && b.y < 100)
+  );
+  if (laneOptions.length === 0) return;
+  const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
+  bombs.push({ lane: lane, y: -80 });
+}
+
+function spawnRock() {
+  if (!bossActive) return;
+  rocks.push({ lane: Math.floor(Math.random() * 3), y: -60 });
+}
+
+/* === Игровой цикл === */
 function draw() {
   if (isGameOver) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawPlayer();
+  drawBones();
+  drawBombs();
+  drawRocks();
 
-  if (isBossMode) {
+  updateBones();
+  updateBombs();
+  updateRocks();
+
+  if (bossActive) {
     drawCrow();
     updateCrow();
   }
 
-  drawPlayer();
-  if (!isBossMode) {
-    drawBones();
-    drawBombs();
-    updateBones();
-    updateBombs();
-  }
-
-  maybeEnterBossMode();
-}
-
-/* --------- спавн --------- */
-function spawnBone() {
-  if (!isBossMode) bones.push({ lane: Math.floor(Math.random() * 3), y: -60 });
-}
-
-function spawnBomb() {
-  if (!isBossMode) {
-    const laneOptions = [0, 1, 2].filter(l =>
-      !bones.some(b => b.lane === l && b.y < 100)
-    );
-    if (laneOptions.length > 0) {
-      const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
-      bombs.push({ lane, y: -80 });
-    }
+  if (!bossActive && (score >= 30 && (score - 30) % 50 === 0)) {
+    activateBoss();
   }
 }
 
-/* --------- конец игры --------- */
-function endGame() {
+/* === Ворона активируется === */
+function activateBoss() {
+  bossActive = true;
+  player.y = 200;
+  crow = {
+    frame: 0,
+    frameDelay: 7,
+    frameCounter: 0,
+    x: lanes[player.lane] + 20,
+    y: canvas.height + 100,
+    targetLane: player.lane
+  };
+  rockInterval = setInterval(spawnRock, 1500);
+}
+
+/* === Ворона атакует === */
+function crowAttack() {
+  endGame("🐦 Ворона настигла вас после столкновения с камнем!");
+}
+
+/* === Конец игры === */
+function endGame(message = "💥 Вы попали на бомбу!") {
   isGameOver = true;
   clearInterval(gameInterval);
   clearInterval(boneInterval);
   clearInterval(bombInterval);
+  clearInterval(rockInterval);
   restartBtn.style.display = "block";
-  alert(`💥 Игра окончена! Очки: ${score}`);
+  alert(`${message}\nИгра окончена. Очки: ${score}`);
 }
 
-/* --------- запуск --------- */
+/* === Старт игры === */
 function startGame() {
-  bones = []; bombs = [];
-  score = 0; speed = 2;
-  frameIndex = 0; frameDelayCounter = 0;
-  crow.y = -150;
+  bones = [];
+  bombs = [];
+  rocks = [];
+  score = 0;
+  frameIndex = 0;
+  frameDelayCounter = 0;
   isGameOver = false;
-  isBossMode = false;
+  bossActive = false;
 
-  player = { lane: 1, y: 350, width: 120, height: 120 };
+  player.lane = 1;
+  player.y = 350;
 
   scoreDisplay.textContent = "Очки: 0";
   restartBtn.style.display = "none";
@@ -196,24 +265,18 @@ function startGame() {
   clearInterval(gameInterval);
   clearInterval(boneInterval);
   clearInterval(bombInterval);
+  clearInterval(rockInterval);
 
   gameInterval = setInterval(draw, 20);
   boneInterval = setInterval(spawnBone, 1000);
   bombInterval = setInterval(spawnBomb, 3000);
 }
 
-/* --------- управление --------- */
+/* === Управление === */
 document.addEventListener("keydown", e => {
-  if (!isBossMode) {
-    if (e.key === "ArrowLeft" && player.lane > 0) player.lane--;
-    if (e.key === "ArrowRight" && player.lane < 2) player.lane++;
-  } else {
-    if (e.key === "ArrowUp" && player.y > 0) player.y -= 10;
-    if (e.key === "ArrowDown" && player.y < canvas.height - player.height) player.y += 10;
-    if (e.key === "ArrowLeft") player.x -= 10;
-    if (e.key === "ArrowRight") player.x += 10;
-  }
+  if (e.key === "ArrowLeft" && player.lane > 0) player.lane--;
+  if (e.key === "ArrowRight" && player.lane < 2) player.lane++;
 });
 
-/* --------- запуск --------- */
+/* === Запуск === */
 startGame();
