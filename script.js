@@ -68,10 +68,14 @@ function drawBones() {
   );
 }
 
-function drawBombs() {
-  bombs.forEach(b =>
-    ctx.drawImage(bombImg, lanes[b.lane], b.y, 60, 80)
+function spawnBomb() {
+  const laneOptions = [0, 1, 2].filter(l =>
+    !bones.some(b => b.lane === l && b.y < 100) // если уже есть кость в верхней части
   );
+  if (laneOptions.length === 0) return; // нет доступных полос — не спавним бомбу
+
+  const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
+  bombs.push({ lane: lane, y: -80 });
 }
 
 /* =========================== ОБНОВЛЕНИЕ =========================== */
@@ -98,11 +102,13 @@ function updateBombs() {
   bombs = bombs.filter(b => b.y < canvas.height);
 
   bombs.forEach(b => {
-    if (
-      b.lane === player.lane &&
-      b.y + 80 >= player.y &&
-      b.y <= player.y + player.height
-    ) {
+    const bombTopY = b.y + 40; // нижняя половина активна (60x80 бомба)
+    const bombBottomY = b.y + 80;
+
+    const isInSameLane = b.lane === player.lane;
+    const intersects = bombBottomY >= player.y && bombTopY <= player.y + player.height;
+
+    if (isInSameLane && intersects) {
       endGame();
     }
   });
