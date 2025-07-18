@@ -1,69 +1,76 @@
 const canvas = document.getElementById("gameCanvas");
-const ctx   = canvas.getContext("2d");
+const ctx = canvas.getContext("2d");
 
 /* --------- изображения --------- */
 const dogSprite = new Image();
 dogSprite.src = "assets/dog-sprite4.png";
 
-const boneImg  = new Image();
-boneImg.src    = "assets/bone1.png";
+const boneImg = new Image();
+boneImg.src = "assets/bone1.png";
 
-const bombImg  = new Image();
-bombImg.src    = "assets/bomb.png";
+const bombImg = new Image();
+bombImg.src = "assets/bomb.png";
 
 const crowSprite = new Image();
 crowSprite.src = "assets/crow-sprite.png";
 
-/* --------- элементы UI --------- */
+/* --------- UI --------- */
 const scoreDisplay = document.getElementById("score");
-const restartBtn   = document.getElementById("restartBtn");
+const restartBtn = document.getElementById("restartBtn");
 
-/* --------- анимация спрайта --------- */
-let frameIndex         = 0;
-const frameCount       = 9;
-const frameDelay       = 5;
-let frameDelayCounter  = 0;
+/* --------- настройки спрайтов --------- */
+let frameIndex = 0, frameDelayCounter = 0;
+const frameCount = 9, frameDelay = 5;
+const spriteCols = 3, spriteRows = 3;
+const frameWidth = 1024 / spriteCols;
+const frameHeight = 1024 / spriteRows;
 
-const spriteCols = 3;
-const spriteRows = 3;
-const spriteSheetWidth  = 1024;
-const spriteSheetHeight = 1024;
-const frameWidth  = spriteSheetWidth  / spriteCols; // 341.33
-const frameHeight = spriteSheetHeight / spriteRows; // 341.33
+let crowFrameIndex = 0, crowDelayCounter = 0;
 
-/* --------- игровое состояние --------- */
+/* --------- состояние --------- */
 let player = { lane: 1, y: 350, width: 120, height: 120 };
 const lanes = [15, 105, 205];
+let bones = [], bombs = [], score = 0, speed = 2;
+let isGameOver = false, isBossMode = false;
+let gameInterval, boneInterval, bombInterval;
 
-let bones = [];
-let bombs = [];
-let score = 0;
-let speed = 2;
+/* --------- враг (ворона) --------- */
+let crow = { x: canvas.width / 2 - 60, y: -150, width: 120, height: 120 };
+let crowSpriteReady = false;
 
-let isBossLevel = false;
-let crowFrameIndex = 0;
-let crowFrameDelayCounter = 0;
-let crow = { x: 140, y: -100, width: 120, height: 120 };
+crowSprite.onload = () => { crowSpriteReady = true; };
 
-let gameInterval;
-let boneInterval;
-let bombInterval;
-let isGameOver = false;
+function drawCrow() {
+  if (!crowSpriteReady) return;
+  const col = crowFrameIndex % spriteCols;
+  const row = Math.floor(crowFrameIndex / spriteCols);
 
-/* =========================== РИСОВАНИЕ =========================== */
+  ctx.drawImage(
+    crowSprite,
+    col * frameWidth, row * frameHeight,
+    frameWidth, frameHeight,
+    crow.x, crow.y,
+    crow.width, crow.height
+  );
+
+  if (++crowDelayCounter >= frameDelay) {
+    crowFrameIndex = (crowFrameIndex + 1) % frameCount;
+    crowDelayCounter = 0;
+  }
+}
+
+/* --------- отрисовка --------- */
 function drawPlayer() {
   const col = frameIndex % spriteCols;
   const row = Math.floor(frameIndex / spriteCols);
-
   ctx.drawImage(
     dogSprite,
     col * frameWidth, row * frameHeight,
     frameWidth, frameHeight,
-    lanes[player.lane] + (35 - player.width / 2),
+    isBossMode ? player.x : lanes[player.lane] + (35 - player.width / 2),
     player.y,
     player.width, player.height
   );
-
   if (++frameDelayCounter >= frameDelay) {
     frameIndex = (frameIndex + 1) % frameCount;
     frameDelayCounter = 0;
@@ -82,146 +89,107 @@ function drawBombs() {
   );
 }
 
-function drawCrow() {
-  if (!isBossLevel) return;
-
-  const crowCols = 3;
-  const crowRows = 3;
-  const crowFrameWidth = crowSprite.width / crowCols;
-  const crowFrameHeight = crowSprite.height / crowRows;
-
-  const col = crowFrameIndex % crowCols;
-  const row = Math.floor(crowFrameIndex / crowCols);
-
-  ctx.drawImage(
-    crowSprite,
-    col * crowFrameWidth, row * crowFrameHeight,
-    crowFrameWidth, crowFrameHeight,
-    crow.x, crow.y,
-    crow.width, crow.height
-  );
-
-  if (++crowFrameDelayCounter >= frameDelay) {
-    crowFrameIndex = (crowFrameIndex + 1) % 9;
-    crowFrameDelayCounter = 0;
-  }
-}
-
-/* =========================== ОБНОВЛЕНИЕ =========================== */
+/* --------- обновление --------- */
 function updateBones() {
-  bones.forEach(b => (b.y += speed));
+  bones.forEach(b => b.y += speed);
   bones = bones.filter(b => b.y < canvas.height);
-
   bones.forEach(b => {
-    if (
-      b.lane === player.lane &&
-      b.y + 60 >= player.y &&
-      b.y <= player.y + player.height
-    ) {
+    if (!isBossMode && b.lane === player.lane &&
+        b.y + 60 >= player.y && b.y <= player.y + player.height) {
       score++;
       bones = bones.filter(x => x !== b);
-
-      if (!isBossLevel && (score >= 30 && (score - 30) % 50 === 0)) {
-        startBossLevel();
-      }
     }
   });
-
   scoreDisplay.textContent = "Очки: " + score;
 }
 
 function updateBombs() {
-  bombs.forEach(b => (b.y += speed));
+  bombs.forEach(b => b.y += speed);
   bombs = bombs.filter(b => b.y < canvas.height);
-
   bombs.forEach(b => {
-    const activeZoneTopY = b.y + 100;
-    const activeZoneBottomY = b.y + 60;
-
-    const isInSameLane = b.lane === player.lane;
-    const intersects = activeZoneBottomY >= player.y && activeZoneTopY <= player.y + player.height;
-
-    if (isInSameLane && intersects) {
-      endGame();
-    }
+    const top = b.y + 60, bottom = b.y + 100;
+    const intersect = bottom >= player.y && top <= player.y + player.height;
+    const sameLane = !isBossMode && b.lane === player.lane;
+    if (sameLane && intersect) endGame();
   });
 }
 
 function updateCrow() {
-  if (!isBossLevel) return;
-  crow.y += 1.5;
+  crow.y += 0.5;
+  if (crow.y + crow.height >= player.y) endGame();
+}
 
-  if (crow.y > canvas.height) {
-    endBossLevel();
+function maybeEnterBossMode() {
+  if (!isBossMode && (score >= 30 && (score - 30) % 50 === 0)) {
+    isBossMode = true;
+    bones = []; bombs = [];
+    player.lane = 1;
+    player.x = canvas.width / 2 - 60;
+    player.y = 400;
+    crow.y = -150;
   }
 }
 
-/* =========================== СПАВН =========================== */
-function spawnBone() {
-  bones.push({ lane: Math.floor(Math.random() * 3), y: -60 });
-}
-
-function spawnBomb() {
-  const laneOptions = [0, 1, 2].filter(l =>
-    !bones.some(b => b.lane === l && b.y < 100)
-  );
-  if (laneOptions.length === 0) return;
-
-  const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
-  bombs.push({ lane: lane, y: -80 });
-}
-
-/* =========================== ЦИКЛ =========================== */
+/* --------- цикл --------- */
 function draw() {
   if (isGameOver) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (isBossMode) {
+    drawCrow();
+    updateCrow();
+  }
+
   drawPlayer();
-  drawBones();
-  drawBombs();
-  drawCrow();
-  updateBones();
-  updateBombs();
-  updateCrow();
+  if (!isBossMode) {
+    drawBones();
+    drawBombs();
+    updateBones();
+    updateBombs();
+  }
+
+  maybeEnterBossMode();
 }
 
-/* =========================== КОНЕЦ ИГРЫ =========================== */
+/* --------- спавн --------- */
+function spawnBone() {
+  if (!isBossMode) bones.push({ lane: Math.floor(Math.random() * 3), y: -60 });
+}
+
+function spawnBomb() {
+  if (!isBossMode) {
+    const laneOptions = [0, 1, 2].filter(l =>
+      !bones.some(b => b.lane === l && b.y < 100)
+    );
+    if (laneOptions.length > 0) {
+      const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
+      bombs.push({ lane, y: -80 });
+    }
+  }
+}
+
+/* --------- конец игры --------- */
 function endGame() {
   isGameOver = true;
   clearInterval(gameInterval);
   clearInterval(boneInterval);
   clearInterval(bombInterval);
   restartBtn.style.display = "block";
-  alert(`💥 Вы попали на бомбу!\nИгра окончена. Очки: ${score}`);
+  alert(`💥 Игра окончена! Очки: ${score}`);
 }
 
-function startBossLevel() {
-  isBossLevel = true;
-  crow.y = -100;
-  player.y = 220;
-}
-
-function endBossLevel() {
-  isBossLevel = false;
-  crow.y = -100;
-  player.y = 350;
-}
-
-/* =========================== СТАРТ/РЕСТАРТ =========================== */
+/* --------- запуск --------- */
 function startGame() {
-  bones = [];
-  bombs = [];
-  score = 0;
-  frameIndex = 0;
-  frameDelayCounter = 0;
-  crowFrameIndex = 0;
-  crowFrameDelayCounter = 0;
+  bones = []; bombs = [];
+  score = 0; speed = 2;
+  frameIndex = 0; frameDelayCounter = 0;
+  crow.y = -150;
   isGameOver = false;
-  isBossLevel = false;
+  isBossMode = false;
 
-  player.lane = 1;
-  player.y = 350;
-  crow.y = -100;
+  player = { lane: 1, y: 350, width: 120, height: 120 };
+
   scoreDisplay.textContent = "Очки: 0";
   restartBtn.style.display = "none";
 
@@ -234,18 +202,18 @@ function startGame() {
   bombInterval = setInterval(spawnBomb, 3000);
 }
 
-/* =========================== УПРАВЛЕНИЕ =========================== */
+/* --------- управление --------- */
 document.addEventListener("keydown", e => {
-  if (isGameOver) return;
-
-  if (!isBossLevel) {
-    if (e.key === "ArrowLeft"  && player.lane > 0) player.lane--;
+  if (!isBossMode) {
+    if (e.key === "ArrowLeft" && player.lane > 0) player.lane--;
     if (e.key === "ArrowRight" && player.lane < 2) player.lane++;
   } else {
-    if (e.key === "ArrowLeft")  player.x -= 10;
+    if (e.key === "ArrowUp" && player.y > 0) player.y -= 10;
+    if (e.key === "ArrowDown" && player.y < canvas.height - player.height) player.y += 10;
+    if (e.key === "ArrowLeft") player.x -= 10;
     if (e.key === "ArrowRight") player.x += 10;
   }
 });
 
-/* =========================== ЗАПУСК =========================== */
+/* --------- запуск --------- */
 startGame();
