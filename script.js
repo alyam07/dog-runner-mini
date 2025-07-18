@@ -99,7 +99,7 @@ function updateBombs() {
 
   bombs.forEach(b => {
     const activeZoneTopY = b.y + 100;      // начало опасной зоны (нижние 20px)
-    const activeZoneBottomY = b.y + 100;   // конец бомбы
+    const activeZoneBottomY = b.y + 20;   // конец бомбы
 
     const isInSameLane = b.lane === player.lane;
     const intersects = activeZoneBottomY >= player.y && activeZoneTopY <= player.y + player.height;
