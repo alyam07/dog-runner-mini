@@ -18,28 +18,28 @@ const restartBtn   = document.getElementById("restartBtn");
 /* --------- анимация спрайта --------- */
 let frameIndex         = 0;
 const frameCount       = 9;
-const frameDelay       = 5;   // каждые 5 тик-кадров → следующий кадр
+const frameDelay       = 5;
 let frameDelayCounter  = 0;
 
 const spriteCols = 3;
 const spriteRows = 3;
 const spriteSheetWidth  = 1024;
 const spriteSheetHeight = 1024;
-const frameWidth  = spriteSheetWidth  / spriteCols; // 341
-const frameHeight = spriteSheetHeight / spriteRows; // 341
+const frameWidth  = spriteSheetWidth  / spriteCols; // 341.33
+const frameHeight = spriteSheetHeight / spriteRows; // 341.33
 
 /* --------- игровое состояние --------- */
 let player = { lane: 1, y: 350, width: 120, height: 120 };
-const lanes = [15, 105, 205];   // X-позиции трёх дорожек
+const lanes = [15, 105, 205];
 
 let bones = [];
 let bombs = [];
 let score = 0;
 let speed = 2;
 
-let gameInterval;   // основной цикл
-let boneInterval;   // таймер косточек
-let bombInterval;   // таймер бомб
+let gameInterval;
+let boneInterval;
+let bombInterval;
 let isGameOver = false;
 
 /* =========================== РИСОВАНИЕ =========================== */
@@ -49,11 +49,11 @@ function drawPlayer() {
 
   ctx.drawImage(
     dogSprite,
-    col * frameWidth, row * frameHeight,           // исходный кадр
-    frameWidth, frameHeight,                       // размер кадра
-    lanes[player.lane] + (35 - player.width / 2),  // X-позиция
-    player.y,                                      // Y-позиция
-    player.width, player.height                    // масштаб
+    col * frameWidth, row * frameHeight,
+    frameWidth, frameHeight,
+    lanes[player.lane] + (35 - player.width / 2),
+    player.y,
+    player.width, player.height
   );
 
   if (++frameDelayCounter >= frameDelay) {
@@ -68,14 +68,10 @@ function drawBones() {
   );
 }
 
-function spawnBomb() {
-  const laneOptions = [0, 1, 2].filter(l =>
-    !bones.some(b => b.lane === l && b.y < 100) // если уже есть кость в верхней части
+function drawBombs() {
+  bombs.forEach(b =>
+    ctx.drawImage(bombImg, lanes[b.lane], b.y, 60, 80)
   );
-  if (laneOptions.length === 0) return; // нет доступных полос — не спавним бомбу
-
-  const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
-  bombs.push({ lane: lane, y: -80 });
 }
 
 /* =========================== ОБНОВЛЕНИЕ =========================== */
@@ -102,7 +98,7 @@ function updateBombs() {
   bombs = bombs.filter(b => b.y < canvas.height);
 
   bombs.forEach(b => {
-    const bombTopY = b.y + 40; // нижняя половина активна (60x80 бомба)
+    const bombTopY = b.y + 40; // нижняя половина активна
     const bombBottomY = b.y + 80;
 
     const isInSameLane = b.lane === player.lane;
@@ -119,6 +115,15 @@ function spawnBone() {
   bones.push({ lane: Math.floor(Math.random() * 3), y: -60 });
 }
 
+function spawnBomb() {
+  const laneOptions = [0, 1, 2].filter(l =>
+    !bones.some(b => b.lane === l && b.y < 100)
+  );
+  if (laneOptions.length === 0) return;
+
+  const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
+  bombs.push({ lane: lane, y: -80 });
+}
 
 /* =========================== ЦИКЛ =========================== */
 function draw() {
