@@ -119,9 +119,6 @@ function spawnBone() {
   bones.push({ lane: Math.floor(Math.random() * 3), y: -60 });
 }
 
-function spawnBomb() {
-  bombs.push({ lane: Math.floor(Math.random() * 3), y: -80 });
-}
 
 /* =========================== ЦИКЛ =========================== */
 function draw() {
