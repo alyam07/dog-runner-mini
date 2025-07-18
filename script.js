@@ -11,6 +11,9 @@ boneImg.src    = "assets/bone1.png";
 const bombImg  = new Image();
 bombImg.src    = "assets/bomb.png";
 
+const crowSprite = new Image();
+crowSprite.src = "assets/crow-sprite.png";
+
 /* --------- элементы UI --------- */
 const scoreDisplay = document.getElementById("score");
 const restartBtn   = document.getElementById("restartBtn");
@@ -36,6 +39,11 @@ let bones = [];
 let bombs = [];
 let score = 0;
 let speed = 2;
+
+let isBossLevel = false;
+let crowFrameIndex = 0;
+let crowFrameDelayCounter = 0;
+let crow = { x: 140, y: -100, width: 120, height: 120 };
 
 let gameInterval;
 let boneInterval;
@@ -74,6 +82,31 @@ function drawBombs() {
   );
 }
 
+function drawCrow() {
+  if (!isBossLevel) return;
+
+  const crowCols = 3;
+  const crowRows = 3;
+  const crowFrameWidth = crowSprite.width / crowCols;
+  const crowFrameHeight = crowSprite.height / crowRows;
+
+  const col = crowFrameIndex % crowCols;
+  const row = Math.floor(crowFrameIndex / crowCols);
+
+  ctx.drawImage(
+    crowSprite,
+    col * crowFrameWidth, row * crowFrameHeight,
+    crowFrameWidth, crowFrameHeight,
+    crow.x, crow.y,
+    crow.width, crow.height
+  );
+
+  if (++crowFrameDelayCounter >= frameDelay) {
+    crowFrameIndex = (crowFrameIndex + 1) % 9;
+    crowFrameDelayCounter = 0;
+  }
+}
+
 /* =========================== ОБНОВЛЕНИЕ =========================== */
 function updateBones() {
   bones.forEach(b => (b.y += speed));
@@ -87,6 +120,10 @@ function updateBones() {
     ) {
       score++;
       bones = bones.filter(x => x !== b);
+
+      if (!isBossLevel && (score >= 30 && (score - 30) % 50 === 0)) {
+        startBossLevel();
+      }
     }
   });
 
@@ -98,8 +135,8 @@ function updateBombs() {
   bombs = bombs.filter(b => b.y < canvas.height);
 
   bombs.forEach(b => {
-    const activeZoneTopY = b.y + 100;      // начало опасной зоны (нижние 20px)
-    const activeZoneBottomY = b.y + 60;   // конец бомбы
+    const activeZoneTopY = b.y + 100;
+    const activeZoneBottomY = b.y + 60;
 
     const isInSameLane = b.lane === player.lane;
     const intersects = activeZoneBottomY >= player.y && activeZoneTopY <= player.y + player.height;
@@ -108,6 +145,15 @@ function updateBombs() {
       endGame();
     }
   });
+}
+
+function updateCrow() {
+  if (!isBossLevel) return;
+  crow.y += 1.5;
+
+  if (crow.y > canvas.height) {
+    endBossLevel();
+  }
 }
 
 /* =========================== СПАВН =========================== */
@@ -133,8 +179,10 @@ function draw() {
   drawPlayer();
   drawBones();
   drawBombs();
+  drawCrow();
   updateBones();
   updateBombs();
+  updateCrow();
 }
 
 /* =========================== КОНЕЦ ИГРЫ =========================== */
@@ -147,6 +195,18 @@ function endGame() {
   alert(`💥 Вы попали на бомбу!\nИгра окончена. Очки: ${score}`);
 }
 
+function startBossLevel() {
+  isBossLevel = true;
+  crow.y = -100;
+  player.y = 220;
+}
+
+function endBossLevel() {
+  isBossLevel = false;
+  crow.y = -100;
+  player.y = 350;
+}
+
 /* =========================== СТАРТ/РЕСТАРТ =========================== */
 function startGame() {
   bones = [];
@@ -154,9 +214,14 @@ function startGame() {
   score = 0;
   frameIndex = 0;
   frameDelayCounter = 0;
+  crowFrameIndex = 0;
+  crowFrameDelayCounter = 0;
   isGameOver = false;
+  isBossLevel = false;
 
   player.lane = 1;
+  player.y = 350;
+  crow.y = -100;
   scoreDisplay.textContent = "Очки: 0";
   restartBtn.style.display = "none";
 
@@ -171,8 +236,15 @@ function startGame() {
 
 /* =========================== УПРАВЛЕНИЕ =========================== */
 document.addEventListener("keydown", e => {
-  if (e.key === "ArrowLeft"  && player.lane > 0) player.lane--;
-  if (e.key === "ArrowRight" && player.lane < 2) player.lane++;
+  if (isGameOver) return;
+
+  if (!isBossLevel) {
+    if (e.key === "ArrowLeft"  && player.lane > 0) player.lane--;
+    if (e.key === "ArrowRight" && player.lane < 2) player.lane++;
+  } else {
+    if (e.key === "ArrowLeft")  player.x -= 10;
+    if (e.key === "ArrowRight") player.x += 10;
+  }
 });
 
 /* =========================== ЗАПУСК =========================== */
