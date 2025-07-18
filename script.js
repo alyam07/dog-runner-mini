@@ -98,7 +98,7 @@ function updateBombs() {
   bombs = bombs.filter(b => b.y < canvas.height);
 
   bombs.forEach(b => {
-    const activeZoneTopY = b.y + 60;      // начало опасной зоны (нижние 20px)
+    const activeZoneTopY = b.y + 100;      // начало опасной зоны (нижние 20px)
     const activeZoneBottomY = b.y + 80;   // конец бомбы
 
     const isInSameLane = b.lane === player.lane;
