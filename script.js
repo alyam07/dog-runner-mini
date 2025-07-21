@@ -135,7 +135,7 @@ function updateBones() {
 }
 
 function updateBombs() {
-  if (bossActive) return; // ❌ Не обновлять бомбы, если ворона активна
+  if (bossActive) return; // ❌ отключаем бомбы при активации вороны
   bombs.forEach(b => (b.y += speed));
   bombs = bombs.filter(b => b.y < canvas.height);
 
@@ -201,17 +201,18 @@ function draw() {
   if (isGameOver) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   drawPlayer();
   drawBones();
-  drawRocks();
-
   updateBones();
-  updateRocks();
 
   if (!bossActive) {
     drawBombs();
     updateBombs();
   }
+
+  drawRocks();
+  updateRocks();
 
   if (bossActive) {
     drawCrow();
@@ -226,9 +227,8 @@ function draw() {
 /* === Активация босса === */
 function activateBoss() {
   bossActive = true;
-
-  clearInterval(bombInterval); // ⛔ Останавливаем бомбы
-  bombs = []; // ❌ Удаляем существующие бомбы
+  clearInterval(bombInterval); // ❌ Остановить генерацию бомб
+  bombs = []; // ❌ Очистить существующие
 
   player.y = 200;
 
@@ -244,7 +244,7 @@ function activateBoss() {
   rockInterval = setInterval(spawnRock, 1500);
 }
 
-/* === Ворона атакует === */
+/* === Атака вороны === */
 function crowAttack() {
   endGame("🐦 Ворона настигла вас после столкновения с камнем!");
 }
