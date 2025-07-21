@@ -6,65 +6,37 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-/* === Изображения === */
-const dogSprite = new Image();
-dogSprite.src = "assets/dog-sprite4.png";
+// === Изображения ===
+const dogSprite = new Image(); dogSprite.src = "assets/dog-sprite4.png";
+const boneImg = new Image();    boneImg.src = "assets/bone1.png";
+const crowSprite = new Image(); crowSprite.src = "assets/crow-sprite1.png";
+const rockImg = new Image();    rockImg.src = "assets/rock.png";
 
-const boneImg = new Image();
-boneImg.src = "assets/bone1.png";
-
-const bombImg = new Image();
-bombImg.src = "assets/bomb.png";
-
-const crowSprite = new Image();
-crowSprite.src = "assets/crow-sprite1.png";
-
-const rockImg = new Image();
-rockImg.src = "assets/rock.png";
-
-/* === UI элементы === */
+// === UI ===
 const scoreDisplay = document.getElementById("score");
 const restartBtn = document.getElementById("restartBtn");
 
-/* === Анимация собаки === */
-let frameIndex = 0;
-const frameCount = 9;
-const frameDelay = 5;
-let frameDelayCounter = 0;
-
-const spriteCols = 3;
-const spriteRows = 3;
+// === Анимация собаки ===
+let frameIndex = 0, frameDelayCounter = 0;
+const frameCount = 9, frameDelay = 5;
+const spriteCols = 3, spriteRows = 3;
 const frameWidth = 1024 / spriteCols;
 const frameHeight = 1024 / spriteRows;
 
-/* === Игровое состояние === */
-let player = { lane: 1, y: 350, width: 120, height: 120 };
+// === Игровое состояние ===
 const lanes = [15, 105, 205];
+let player = { lane: 1, y: 350, width: 120, height: 120 };
+let bones = [], rocks = [], score = 0;
+let speed = 2, isGameOver = false, bossActive = false;
 
-let bones = [];
-let bombs = [];
-let rocks = [];
+let gameInterval, boneInterval, rockInterval;
 
-let score = 0;
-let speed = 2;
-let isGameOver = false;
-
-let gameInterval;
-let boneInterval;
-let bombInterval;
-let rockInterval;
-
-let bossActive = false;
 let crow = {
-  frame: 0,
-  frameDelay: 7,
-  frameCounter: 0,
-  x: lanes[1],
-  y: canvas.height,
-  targetLane: 1,
+  frame: 0, frameDelay: 7, frameCounter: 0,
+  x: lanes[1], y: canvas.height, targetLane: 1
 };
 
-/* === Рисование === */
+// === Отрисовка ===
 function drawPlayer() {
   const col = frameIndex % spriteCols;
   const row = Math.floor(frameIndex / spriteCols);
@@ -82,82 +54,45 @@ function drawPlayer() {
 }
 
 function drawBones() {
-  bones.forEach(b =>
-    ctx.drawImage(boneImg, lanes[b.lane], b.y, 60, 60)
-  );
-}
-
-function drawBombs() {
-  bombs.forEach(b =>
-    ctx.drawImage(bombImg, lanes[b.lane], b.y, 60, 80)
-  );
+  bones.forEach(b => ctx.drawImage(boneImg, lanes[b.lane], b.y, 60, 60));
 }
 
 function drawRocks() {
-  rocks.forEach(r =>
-    ctx.drawImage(rockImg, lanes[r.lane], r.y, 60, 60)
-  );
+  rocks.forEach(r => ctx.drawImage(rockImg, lanes[r.lane], r.y, 60, 60));
 }
 
 function drawCrow() {
-  const crowCol = crow.frame % 3;
-  const crowRow = Math.floor(crow.frame / 3);
-  ctx.drawImage(
-    crowSprite,
-    crowCol * 341, crowRow * 341,
-    341, 341,
-    crow.x, crow.y,
-    100, 100
-  );
+  const col = crow.frame % 3;
+  const row = Math.floor(crow.frame / 3);
+  ctx.drawImage(crowSprite, col * 341, row * 341, 341, 341, crow.x, crow.y, 100, 100);
   if (++crow.frameCounter >= crow.frameDelay) {
     crow.frame = (crow.frame + 1) % 9;
     crow.frameCounter = 0;
   }
 }
 
-/* === Обновление === */
+// === Обновления ===
 function updateBones() {
-  bones.forEach(b => (b.y += speed));
+  bones.forEach(b => b.y += speed);
   bones = bones.filter(b => b.y < canvas.height);
-
   bones.forEach(b => {
-    if (
-      b.lane === player.lane &&
-      b.y + 60 >= player.y &&
-      b.y <= player.y + player.height
-    ) {
-      score++;
+    if (b.lane === player.lane && b.y + 60 >= player.y && b.y <= player.y + player.height) {
       bones = bones.filter(x => x !== b);
+      score++;
     }
   });
-
   scoreDisplay.textContent = "Очки: " + score;
 }
 
-function updateBombs() {
-  if (bossActive) return; // ❌ отключаем бомбы при активации вороны
-  bombs.forEach(b => (b.y += speed));
-  bombs = bombs.filter(b => b.y < canvas.height);
-
-  bombs.forEach(b => {
-    const top = b.y + 80;
-    const bottom = b.y + 40;
-    const isInSameLane = b.lane === player.lane;
-    const intersects = bottom >= player.y && top <= player.y + player.height;
-    if (isInSameLane && intersects) endGame();
-  });
-}
-
 function updateRocks() {
-  rocks.forEach(b => (b.y += speed));
-  rocks = rocks.filter(b => b.y < canvas.height);
-
-  rocks.forEach(b => {
-    const top = b.y + 80;
-    const bottom = b.y + 40;
-    const isInSameLane = b.lane === player.lane;
-    const intersects = bottom >= player.y && top <= player.y + player.height;
-    if (isInSameLane && intersects) crowAttack();
+  rocks.forEach(r => r.y += speed);
+  rocks = rocks.filter(r => r.y < canvas.height);
+  rocks.forEach(r => {
+    const top = r.y + 80;
+    const bottom = r.y + 40;
+    if (r.lane === player.lane && bottom >= player.y && top <= player.y + player.height) {
+      crowAttack();
+    }
   });
 }
 
@@ -167,7 +102,6 @@ function updateCrow() {
   } else {
     crow.y = player.y + player.height + 10;
   }
-
   if (crow.targetLane !== player.lane) {
     crow.targetLane = player.lane;
     setTimeout(() => {
@@ -176,123 +110,86 @@ function updateCrow() {
   }
 }
 
-/* === Спавн === */
+// === Спавн ===
 function spawnBone() {
   bones.push({ lane: Math.floor(Math.random() * 3), y: -60 });
 }
 
-function spawnBomb() {
-  if (bossActive) return;
-  const laneOptions = [0, 1, 2].filter(l =>
-    !bones.some(b => b.lane === l && b.y < 100)
-  );
-  if (laneOptions.length === 0) return;
-  const lane = laneOptions[Math.floor(Math.random() * laneOptions.length)];
-  bombs.push({ lane: lane, y: -80 });
-}
-
 function spawnRock() {
-  if (!bossActive) return;
-  rocks.push({ lane: Math.floor(Math.random() * 3), y: -60 });
+  if (bossActive) {
+    rocks.push({ lane: Math.floor(Math.random() * 3), y: -60 });
+  }
 }
 
-/* === Игровой цикл === */
+// === Цикл ===
 function draw() {
   if (isGameOver) return;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   drawPlayer();
-  drawBones();
-  updateBones();
-
-  if (!bossActive) {
-    drawBombs();
-    updateBombs();
-  }
-
-  drawRocks();
-  updateRocks();
-
+  drawBones(); updateBones();
+  drawRocks(); updateRocks();
   if (bossActive) {
-    drawCrow();
-    updateCrow();
+    drawCrow(); updateCrow();
   }
-
-  if (!bossActive && (score >= 30 && (score - 30) % 50 === 0)) {
+  if (!bossActive && score >= 30 && (score - 30) % 50 === 0) {
     activateBoss();
   }
 }
 
-/* === Активация босса === */
+// === Босс ===
 function activateBoss() {
   bossActive = true;
-  clearInterval(bombInterval); // ❌ Остановить генерацию бомб
-  bombs = []; // ❌ Очистить существующие
-
   player.y = 200;
-
-  crow = {
-    frame: 0,
-    frameDelay: 7,
-    frameCounter: 0,
-    x: lanes[player.lane] + 20,
-    y: canvas.height + 100,
-    targetLane: player.lane
-  };
-
+  crow = { frame: 0, frameDelay: 7, frameCounter: 0, x: lanes[player.lane] + 20, y: canvas.height + 100, targetLane: player.lane };
+  rocks = [];
+  clearInterval(rockInterval);
   rockInterval = setInterval(spawnRock, 1500);
 }
 
-/* === Атака вороны === */
+// === Атака вороны ===
 function crowAttack() {
   endGame("🐦 Ворона настигла вас после столкновения с камнем!");
 }
 
-/* === Конец игры === */
-function endGame(message = "💥 Вы попали на бомбу!") {
+// === Конец игры ===
+function endGame(message = "Игра окончена.") {
   isGameOver = true;
   clearInterval(gameInterval);
   clearInterval(boneInterval);
-  clearInterval(bombInterval);
   clearInterval(rockInterval);
   restartBtn.style.display = "block";
-  alert(`${message}\nИгра окончена. Очки: ${score}`);
+  alert(`${message}\nОчки: ${score}`);
 }
 
-/* === Старт игры === */
+// === Запуск игры ===
 function startGame() {
   bones = [];
-  bombs = [];
   rocks = [];
   score = 0;
   frameIndex = 0;
   frameDelayCounter = 0;
   isGameOver = false;
   bossActive = false;
-
-  player.lane = 1;
-  player.y = 350;
+  player = { lane: 1, y: 350, width: 120, height: 120 };
 
   scoreDisplay.textContent = "Очки: 0";
   restartBtn.style.display = "none";
 
   clearInterval(gameInterval);
   clearInterval(boneInterval);
-  clearInterval(bombInterval);
   clearInterval(rockInterval);
 
   gameInterval = setInterval(draw, 20);
   boneInterval = setInterval(spawnBone, 1000);
-  bombInterval = setInterval(spawnBomb, 3000);
+  rockInterval = setInterval(spawnRock, 999999); // временно "заморожен" до bossActive
 }
 
-/* === Управление === */
+// === Управление ===
 document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft" && player.lane > 0) player.lane--;
   if (e.key === "ArrowRight" && player.lane < 2) player.lane++;
 });
 
-/* === Запуск === */
+// === Старт ===
 startGame();
 </script>
