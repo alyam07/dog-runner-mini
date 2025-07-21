@@ -12,7 +12,7 @@ const bombImg = new Image();
 bombImg.src = "assets/bomb.png";
 
 const crowSprite = new Image();
-crowSprite.src = "assets/crow-sprite.png";
+crowSprite.src = "assets/crow-sprite1.png";
 
 const rockImg = new Image();
 rockImg.src = "assets/rock.png";
@@ -142,17 +142,16 @@ function updateBombs() {
     if (isInSameLane && intersects) endGame();
   });
 }
-
 function updateRocks() {
-  rocks.forEach(r => (r.y += speed));
-  rocks = rocks.filter(r => r.y < canvas.height);
+  rocks.forEach(b => (b.y += speed));
+  rocks = rocks.filter(b => b.y < canvas.height);
 
-  rocks.forEach(r => {
-    const isInSameLane = r.lane === player.lane;
-    const intersects = r.y + 60 >= player.y && r.y <= player.y + player.height;
-    if (isInSameLane && intersects) {
-      crowAttack();
-    }
+  rocks.forEach(b => {
+    const top = b.y + 80;
+    const bottom = b.y + 40;
+    const isInSameLane = b.lane === player.lane;
+    const intersects = bottom >= player.y && top <= player.y + player.height;
+    if (isInSameLane && intersects)  crowAttack();
   });
 }
 
