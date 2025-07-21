@@ -1,3 +1,8 @@
+<canvas id="gameCanvas" width="300" height="400"></canvas>
+<div id="score">Очки: 0</div>
+<button id="restartBtn" style="display: none;" onclick="startGame()">Начать заново</button>
+
+<script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -142,6 +147,7 @@ function updateBombs() {
     if (isInSameLane && intersects) endGame();
   });
 }
+
 function updateRocks() {
   rocks.forEach(b => (b.y += speed));
   rocks = rocks.filter(b => b.y < canvas.height);
@@ -151,7 +157,7 @@ function updateRocks() {
     const bottom = b.y + 40;
     const isInSameLane = b.lane === player.lane;
     const intersects = bottom >= player.y && top <= player.y + player.height;
-    if (isInSameLane && intersects)  crowAttack();
+    if (isInSameLane && intersects) crowAttack();
   });
 }
 
@@ -196,11 +202,14 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawPlayer();
   drawBones();
-  drawBombs();
-  drawRocks();
 
+  if (!bossActive) {
+    drawBombs();
+    updateBombs();
+  }
+
+  drawRocks();
   updateBones();
-  updateBombs();
   updateRocks();
 
   if (bossActive) {
@@ -216,7 +225,14 @@ function draw() {
 /* === Ворона активируется === */
 function activateBoss() {
   bossActive = true;
+
+  // Удалить бомбы и остановить их появление
+  bombs = [];
+  clearInterval(bombInterval);
+
+  // Переместить собаку в центр
   player.y = 200;
+
   crow = {
     frame: 0,
     frameDelay: 7,
@@ -225,6 +241,7 @@ function activateBoss() {
     y: canvas.height + 100,
     targetLane: player.lane
   };
+
   rockInterval = setInterval(spawnRock, 1500);
 }
 
@@ -279,3 +296,4 @@ document.addEventListener("keydown", e => {
 
 /* === Запуск === */
 startGame();
+</script>
