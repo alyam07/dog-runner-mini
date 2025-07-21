@@ -1,6 +1,6 @@
-<canvas id="gameCanvas" width="300" height="400"></canvas>
+<canvas id="gameCanvas" width="320" height="480"></canvas>
 <div id="score">Очки: 0</div>
-<button id="restartBtn" style="display: none;" onclick="startGame()">Начать заново</button>
+<button id="restartBtn" style="display:none;" onclick="startGame()">Заново</button>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -26,7 +26,7 @@ rockImg.src = "assets/rock.png";
 const scoreDisplay = document.getElementById("score");
 const restartBtn = document.getElementById("restartBtn");
 
-/* === Анимация спрайта собаки === */
+/* === Анимация собаки === */
 let frameIndex = 0;
 const frameCount = 9;
 const frameDelay = 5;
@@ -34,14 +34,13 @@ let frameDelayCounter = 0;
 
 const spriteCols = 3;
 const spriteRows = 3;
-const spriteSheetWidth = 1024;
-const spriteSheetHeight = 1024;
-const frameWidth = spriteSheetWidth / spriteCols;
-const frameHeight = spriteSheetHeight / spriteRows;
+const frameWidth = 1024 / spriteCols;
+const frameHeight = 1024 / spriteRows;
 
 /* === Игровое состояние === */
 let player = { lane: 1, y: 350, width: 120, height: 120 };
 const lanes = [15, 105, 205];
+
 let bones = [];
 let bombs = [];
 let rocks = [];
@@ -136,6 +135,7 @@ function updateBones() {
 }
 
 function updateBombs() {
+  if (bossActive) return; // ❌ Не обновлять бомбы, если ворона активна
   bombs.forEach(b => (b.y += speed));
   bombs = bombs.filter(b => b.y < canvas.height);
 
@@ -182,6 +182,7 @@ function spawnBone() {
 }
 
 function spawnBomb() {
+  if (bossActive) return;
   const laneOptions = [0, 1, 2].filter(l =>
     !bones.some(b => b.lane === l && b.y < 100)
   );
@@ -202,15 +203,15 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawPlayer();
   drawBones();
+  drawRocks();
+
+  updateBones();
+  updateRocks();
 
   if (!bossActive) {
     drawBombs();
     updateBombs();
   }
-
-  drawRocks();
-  updateBones();
-  updateRocks();
 
   if (bossActive) {
     drawCrow();
@@ -222,15 +223,13 @@ function draw() {
   }
 }
 
-/* === Ворона активируется === */
+/* === Активация босса === */
 function activateBoss() {
   bossActive = true;
 
-  // Удалить бомбы и остановить их появление
-  bombs = [];
-  clearInterval(bombInterval);
+  clearInterval(bombInterval); // ⛔ Останавливаем бомбы
+  bombs = []; // ❌ Удаляем существующие бомбы
 
-  // Переместить собаку в центр
   player.y = 200;
 
   crow = {
